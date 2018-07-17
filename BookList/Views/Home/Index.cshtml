@@ -1,0 +1,262 @@
+﻿<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<script src="~/Scripts/bootstrap.min.js"></script>
+
+@* 显示所有书籍 *@
+<div class="allBooks">
+    <p>当前书架书籍列表</p>
+    <ul id="allbooks"></ul>
+    <p></p>
+    <p></p>
+</div>
+
+@* 增加书籍 *@
+<div class="addBooksBgDiv">
+
+    <p></p><p></p>
+    <p>请输入您要添加的书籍信息</p>
+    <p>书名</p>
+    <input id="name" type="text" />
+    <p>价格</p>
+    <input id="price" type="text" />
+    <p>作者</p>
+    <input id="author" type="text" />
+ 
+    <p></p><p></p>
+    <input type="submit" value="添加" id="submit"/>
+    <p></p>
+    <p></p>
+
+</div>
+
+@* 根据条件查找书籍 *@
+<div class="searchAllBooksBgDiv">
+
+    <p>根据id查找数据</p>
+    <p>请输入书籍id：</p><input type="text" id="bookIdInput" />
+    <p></p>
+    <input type="submit" value="查找" id="search" />
+
+    <p></p><p></p>
+    <p>当前查找的书籍为:</p>
+    <ul id="searchResult">
+        <li>暂无</li>
+    </ul>
+</div>
+
+@* 删除书籍 *@
+<div>
+    <form>
+        <p>请输入您要删除的书籍id：</p>
+        <input type="text" id="removeBookText"/>
+        <p></p><p></p>
+
+        <p id="removeBook">删除</p>
+    </form>
+</div>
+
+@* 更新书籍信息 *@
+<div>
+    <p>请编辑你要更新的信息</p>
+    <p>书籍id</p>
+    <input id="updateId" placeholder="请输入书本id"/>
+    <p>书籍名称</p>
+    <input id="updateName" placeholder="请输入书籍名称" />
+    <p>书籍价格</p>
+    <input id="updatePrice" placeholder="请输入书籍价格" />
+    <p>书籍作者</p>
+    <input id="updateAuthor" placeholder="请输入书籍作者" />
+    <p></p>
+
+    <input type="submit" value="修改"  id="updateBook"/>
+</div>
+
+
+<style>
+
+    #removeBook #search{
+
+        border:1px solid gray;
+        width:60px;
+        text-align:center;
+        background:gray;
+        cursor:pointer;
+    }
+ 
+</style>
+
+<script>
+
+    $(document).ready(function () {
+
+        //自定义书籍类
+        var Book = {
+
+            zycreate: function () {
+
+                bookId = '';
+                bookName = '';
+                bookPrice = '';
+                bookAuthor = '';
+
+                return Book;
+            }
+        }
+
+        //获取所有书籍  在<li></li>标签后面添加删除按钮
+        reload = function(){
+
+            
+            //初始化的时候获取所有书籍信息
+            $.ajax({
+                url: '/api/books/GetBooks/',
+                type:'GET',
+                data: {},
+                dataType:'json',
+                success: function (data) {
+                
+                    var htmlStr = "";
+
+                    //遍历获取书本信息
+                    for (var dd in data) {
+                    
+                        htmlStr += "书本id：" + data[dd].bookId + "&thinsp;&thinsp;&thinsp;&thinsp;"
+                            + "书名:" + data[dd].bookName + "&thinsp;&thinsp;&thinsp;&thinsp;" + "书价:"
+                            + data[dd].bookPrice + "&thinsp;&thinsp;&thinsp;&thinsp;" + "作者:" + data[dd].bookAuthor
+                            + "&thinsp;&thinsp;&thinsp;&thinsp;" + "<br/>";
+                    }
+
+                    $("#allbooks").html(htmlStr);
+                },
+                error: function (error) {
+
+                    console.log(error);
+                }
+            });
+        }
+
+        reload();
+
+        //添加书籍
+        $("#submit").click(function () {
+
+            //var book = Book.zycreate();
+            var book = new Object();
+
+            book.bookName = $("#name").val();
+            book.bookPrice = $("#price").val();
+            book.bookAuthor = $("#author").val();
+
+            console.log("book json = " + JSON.stringify(book));
+
+            $.ajax({
+
+                url: '/api/Books/AddBook/',
+                type: 'POST',
+                data: {"bookName": book.bookName, "bookPrice": book.bookPrice, "bookAuthor": book.bookAuthor },//传输的是对象
+                dataType: 'json', //返回值
+                beforeSend: function () {
+
+                },
+                success: function (data) {
+
+                    console.log("data = " + data);
+
+                    //刷新窗口
+                    //window.location.reload();
+                    reload();
+                },
+                complete: function () {
+
+                },
+                error: function (error) {
+
+                    console.log(error);
+                }
+            });
+
+        });
+
+        //删除书籍
+        $("#removeBook").click(function () {
+
+            var bookId = $("#removeBookText").val();
+
+            $.ajax({
+            
+                url:'/api/Books/RemoveBookWithId?bookId='+bookId,
+                type:'post',
+                dataType:'json',
+                success:function(data){
+
+                    reload();
+                },
+                error:function(error){
+
+                    console.log("删除书籍出错:"+error);
+                }
+            })
+        });
+
+        //查找书籍
+        $("#search").click(function () {
+
+            var bookId = $("#bookIdInput").val();
+
+            $.ajax({
+            
+                url: '/api/Books/PostBookWithId?bookId=' + bookId,
+                type: 'post',
+                dataType: 'json',
+                success: function (data) {
+
+                    var htmlStr = "";
+
+                    if (data == null) {
+                       
+                        htmlStr = "没有查找到相关结果";
+
+                    } else {
+
+                        htmlStr = "书籍id：" + data.bookId + "书籍名称:" + data.bookName +
+                                    "书籍价格:" + data.bookPrice + "书籍作者:" + data.bookAuthor + "<br />";
+                    }
+
+                    $("#searchResult").html(htmlStr);
+                },
+                error: function (error) {
+
+                    console.log(error);
+                }
+            });
+        });
+
+        //修改书籍信息
+        $("#updateBook").click(function () {
+
+            var book = new Object();
+            book.bookId = $("#updateId").val();
+            book.bookName = $("#updateName").val();
+            book.bookPrice = $("#updatePrice").val();
+            book.bookAuthor = $("#updateAuthor").val();
+
+            $.ajax({
+
+                url: '/api/Books/UpdateBook/',
+                type: 'post',
+                data: {'bookId':book.bookId, "bookName":book.bookName, "bookPrice":book.bookPrice, "bookAuthor":book.bookAuthor},
+                dataType:'json',
+                success: function (data) {
+
+                    //更新成功 重新从数据库获取数据
+                    reload();
+                },
+                error: function (error) {
+
+                    console.log(error);
+                }
+            });
+
+        });
+    });
+
+</script>
